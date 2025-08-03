@@ -1,0 +1,48 @@
+name: Build APK
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build Kivy APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y python3-pip unzip git zip openjdk-17-jdk
+          pip install --upgrade pip
+          pip install buildozer
+
+      - name: Initialize Buildozer
+        run: |
+          buildozer init
+          sed -i 's/^# *source.include_exts.*/source.include_exts = py,png,jpg,kv,atlas/' buildozer.spec
+          sed -i 's/^# *requirements.*/requirements = kivy/' buildozer.spec
+          sed -i 's/^# *android\\.api.*/android.api = 33/' buildozer.spec
+          sed -i 's/^# *android\\.ndk.*/android.ndk = 25b/' buildozer.spec
+          sed -i 's/^# *android\\.minapi.*/android.minapi = 21/' buildozer.spec
+          sed -i 's/^# *android\\.target.*/android.target = android-33/' buildozer.spec
+          sed -i 's/^# *android\\.debug.*/android.debug = 1/' buildozer.spec
+          sed -i 's/^# *app\\.title.*/title = Resistor Calculator/' buildozer.spec
+
+      - name: Build APK
+        run: |
+          buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: resistor-calculator-apk
+          path: bin/*.apk
